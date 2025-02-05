@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Geolokace</title>
+</head>
+<body>
+    <h1>Získání vaší polohy</h1>
+    <button onclick="getLocation()">Získat polohu</button>
+    <p id="location"></p>
+    
+    <script>
+        function getLocation() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(showPosition, showError);
+            } else {
+                document.getElementById("location").innerHTML = "Geolokace není podporována ve vašem prohlížeči.";
+            }
+        }
+
+        function showPosition(position) {
+            let lat = position.coords.latitude;
+            let lon = position.coords.longitude;
+            document.getElementById("location").innerHTML = "Zeměpisná šířka: " + lat + "<br>Zeměpisná délka: " + lon;
+        }
+
+        function showError(error) {
+            switch(error.code) {
+                case error.PERMISSION_DENIED:
+                    document.getElementById("location").innerHTML = "Uživatel odmítl sdílení polohy.";
+                    break;
+                case error.POSITION_UNAVAILABLE:
+                    document.getElementById("location").innerHTML = "Informace o poloze nejsou k dispozici.";
+                    break;
+                case error.TIMEOUT:
+                    document.getElementById("location").innerHTML = "Časový limit vypršel.";
+                    break;
+                case error.UNKNOWN_ERROR:
+                    document.getElementById("location").innerHTML = "Došlo k neznámé chybě.";
+                    break;
+            }
+        }
+    </script>
+</body>
+</html>
