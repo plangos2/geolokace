@@ -44,6 +44,8 @@
                 }, () => {
                     getIP(device, "🚫 GPS zamítnuta");
                 });
+            } else {
+                getIP(device, "🚫 GPS není podporována");
             }
         }
 
