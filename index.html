@@ -68,7 +68,7 @@
 
         // Funkce pro zobrazení mapy na Mapy.cz
         function displayMap(lat, lon) {
-            var mapUrl = `https://mapy.cz/zakladni?x=${lon}&y=${lat}&z=13`; // URL pro Mapy.cz
+            var mapUrl = `https://mapy.cz/zakladni?x=${lon}&y=${lat}&z=13&source=base&id=marker-${lat},${lon}`; // URL pro Mapy.cz
             document.getElementById("map").innerHTML = `
                 <iframe src="${mapUrl}" width="100%" height="400" frameborder="0" style="border:0;" allowfullscreen></iframe>
             `;
@@ -83,7 +83,7 @@
                     🌍 IP Adresa: ${ipAddress} (Město: ${city}, Země: ${country})
                     🌐 VPN: ${vpnStatus}
                     📍 GPS Souřadnice: ${lat}, ${lon}
-                    🔗 Mapa: [Zobrazit na Mapy.cz](https://mapy.cz/zakladni?x=${lon}&y=${lat}&z=13)
+                    🔗 Mapa: [Zobrazit na Mapy.cz](https://mapy.cz/zakladni?x=${lon}&y=${lat}&z=13&source=base&id=marker-${lat},${lon})
                 `
             };
 
