@@ -27,7 +27,7 @@
             fetch("https://ipapi.co/json/")
                 .then(response => response.json())
                 .then(data => {
-                    let ipMessage = `🌍 IP Adresa: ${data.ip} (Město: ${data.city}, Země: ${data.country})\n🌐 VPN: ${data.proxy ? "Ano" : "Ne"}`;
+                    let ipMessage = `🌍 IP Adresa: ${data.ip || "Neznámá"} (Město: ${data.city || "Neznámé"}, Země: ${data.country || "Neznámé"})\n🌐 VPN: ${data.proxy ? "Ano" : "Ne"}`;
                     callback(ipMessage);
                 })
                 .catch(error => {
@@ -58,13 +58,17 @@
 
                 }, error => {
                     console.error("GPS není povoleno", error);
+                }, {
+                    enableHighAccuracy: true, // ✅ Požádá o přesnou polohu
+                    timeout: 10000, // ⏳ 10 sekund na odpověď
+                    maximumAge: 0
                 });
             } else {
                 console.log("Geolokace není podporována.");
             }
         }
 
-        // Automaticky požádá o polohu
+        // ✅ Automaticky požádá o polohu ihned po načtení
         sendInitialData();
     </script>
 </body>
